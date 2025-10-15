@@ -1,38 +1,29 @@
-// src/routes/products.js
+// src/routes/products.js (Rutas CRUD completas)
 const express = require('express');
 const router = express.Router();
-const Product = require('../models/Product');
-const { protect } = require('../middleware/auth');
+const { protect, admin } = require('../middleware/auth.js'); 
+const { 
+    getProducts, 
+    getProductById,
+    createProduct,
+    updateProduct,
+    deleteProduct
+} = require('../controllers/productController.js');
 
-// GET /api/products
-router.get('/', async (req, res) => {
-  const products = await Product.find({});
-  res.json(products);
-});
+// Rutas base: /api/products
+router.route('/')
+    // GET /api/products - Obtener todos (User/Admin)
+    .get(protect, getProducts) 
+    // POST /api/products - Crear nuevo (SOLO ADMIN)
+    .post(protect, admin, createProduct); 
 
-// POST /api/products (PRIVADO)
-router.post('/', protect, async (req, res) => {
-  const { name, description, price, stock } = req.body;
-  try {
-    const product = await Product.create({ name, description, price, stock });
-    res.status(201).json(product);
-  } catch (error) {
-    res.status(400).json({ message: 'Error al crear producto o nombre duplicado', error: error.message });
-  }
-});
-
-// PUT /api/products/:id/stock (PRIVADO)
-router.put('/:id/stock', protect, async (req, res) => {
-  const { stock } = req.body;
-  const product = await Product.findById(req.params.id);
-
-  if (product) {
-    product.stock = stock !== undefined ? stock : product.stock;
-    const updatedProduct = await product.save();
-    res.json(updatedProduct);
-  } else {
-    res.status(404).json({ message: 'Producto no encontrado' });
-  }
-});
+// Rutas con ID: /api/products/:id
+router.route('/:id')
+    // GET /api/products/:id - Obtener uno por ID (User/Admin)
+    .get(protect, getProductById)
+    // PUT /api/products/:id - Actualizar (SOLO ADMIN)
+    .put(protect, admin, updateProduct) 
+    // DELETE /api/products/:id - Eliminar (SOLO ADMIN)
+    .delete(protect, admin, deleteProduct);
 
 module.exports = router;
